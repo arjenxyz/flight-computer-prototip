@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <title>FCC</title>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: "Roboto Mono", Consolas, monospace;
+        --bg: #050505;
+        --face: #0e0e0e;
+        --line: #333;
+        --g: #00e676;
+        --c: #00e5ff;
+        --a: #ffc107;
+        --y: #ffee58;
+        --d: #888;
+        --b: #2196f3;
+        --w: #eee;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--w);
+        min-height: 100%;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .fcc {
+        max-width: 440px;
+        margin: 0 auto;
+        padding: 10px 10px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        background: var(--face);
+      }
+      header .id { font-size: 13px; font-weight: 700; letter-spacing: 0.2em; }
+      header .sub { font-size: 9px; color: var(--d); letter-spacing: 0.08em; }
+      .link { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: var(--a); }
+      .link.on { color: var(--g); }
+      section {
+        border: 1px solid var(--line);
+        background: var(--face);
+        padding: 10px;
+      }
+      .htag {
+        font-size: 9px;
+        letter-spacing: 0.18em;
+        color: var(--d);
+        margin-bottom: 8px;
+      }
+      .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      label {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 9px;
+        letter-spacing: 0.12em;
+        color: var(--d);
+      }
+      input {
+        font: inherit;
+        font-size: 22px;
+        font-weight: 700;
+        padding: 10px 8px;
+        text-align: center;
+        text-transform: uppercase;
+        color: var(--c);
+        background: #161616;
+        border: 1px solid #3a3a3a;
+        border-radius: 2px;
+        width: 100%;
+      }
+      .btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+      button {
+        font: inherit;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        padding: 12px 8px;
+        flex: 1 1 30%;
+        min-height: 44px;
+        color: var(--w);
+        background: #1a1a1a;
+        border: 1px solid #3a3a3a;
+        border-radius: 2px;
+      }
+      button.g { background: var(--g); color: #041208; border-color: var(--g); }
+      button.b { background: var(--b); color: #061018; border-color: var(--b); }
+      button.a { border-color: var(--a); color: var(--a); background: #1a1400; }
+      button.on { background: var(--b); border-color: var(--b); color: #061018; }
+      button.fly-on { background: var(--g); border-color: var(--g); color: #041208; }
+      button:disabled { opacity: 0.35; }
+      .status { margin-top: 8px; font-size: 11px; color: var(--d); min-height: 1.2em; }
+      .status.ok { color: var(--g); }
+      .status.err { color: var(--a); }
+      .cells { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+      .cell {
+        text-align: center;
+        padding: 8px 4px;
+        background: #141414;
+        border: 1px solid #262626;
+      }
+      .cell .l { font-size: 8px; letter-spacing: 0.14em; color: var(--d); }
+      .cell .v { margin-top: 3px; font-size: 15px; font-weight: 700; color: var(--g); }
+      .cell .v.c { color: var(--c); }
+      .cell .v.y { color: var(--y); }
+      .cell .v.a { color: var(--a); }
+      .foot { font-size: 9px; color: var(--d); line-height: 1.4; padding: 0 2px; margin-top: 8px; }
+      .peer-box input {
+        font-size: 12px;
+        text-transform: none;
+        text-align: left;
+        color: var(--w);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="fcc">
+      <header>
+        <div>
+          <div class="id">FCC</div>
+          <div class="sub">FLIGHT CONTROL COMPUTER</div>
+        </div>
+        <div id="link" class="link">NO LINK</div>
+      </header>
+
+      <section>
+        <div class="htag">LINK · DISPLAY PEER ID</div>
+        <div class="peer-box">
+          <label>PEER ID (masaüstünden)<input id="peerId" placeholder="masaüstü FCC URL’deki peer=" /></label>
+        </div>
+        <div class="btns">
+          <button id="connectBtn" class="b">CONNECT</button>
+          <button id="reconnect">RELINK</button>
+        </div>
+        <div id="routeMsg" class="status">Masaüstü FCC URL açın veya PEER ID yapıştırın</div>
+      </section>
+
+      <section>
+        <div class="htag">FMS · ROUTE</div>
+        <div class="row2">
+          <label>DEP<input id="dep" maxlength="4" value="LTFM" /></label>
+          <label>ARR<input id="arr" maxlength="4" value="LHBP" /></label>
+        </div>
+        <div class="btns">
+          <button id="load" class="g">LOAD RTE</button>
+          <button id="reset" class="a">RESET</button>
+        </div>
+      </section>
+
+      <section>
+        <div class="htag">EFIS · ND MODE / RANGE</div>
+        <div class="btns" id="modes">
+          <button data-mode="ROSE_NAV" class="on">ROSE</button>
+          <button data-mode="ARC">ARC</button>
+          <button data-mode="PLAN">PLAN</button>
+        </div>
+        <div class="btns">
+          <button id="rngDown">RNG −</button>
+          <button id="rngVal" disabled>80 NM</button>
+          <button id="rngUp">RNG +</button>
+        </div>
+      </section>
+
+      <section>
+        <div class="htag">FCC · CONTROL</div>
+        <div class="btns">
+          <button id="fly" class="g">ENGAGE · FLY</button>
+          <button id="zero">ZERO ATT</button>
+        </div>
+        <div class="btns">
+          <button id="play">RUN / HOLD</button>
+        </div>
+        <div class="foot">ENGAGE · FLY = jiroskop → masaüstü ATT/ND</div>
+      </section>
+
+      <section>
+        <div class="htag">PFD / ND FEED</div>
+        <div class="cells">
+          <div class="cell"><div class="l">PHASE</div><div class="v y" id="tPhase">—</div></div>
+          <div class="cell"><div class="l">ALT</div><div class="v" id="tAlt">—</div></div>
+          <div class="cell"><div class="l">VS</div><div class="v" id="tVs">—</div></div>
+          <div class="cell"><div class="l">GS</div><div class="v" id="tGs">—</div></div>
+          <div class="cell"><div class="l">HDG</div><div class="v c" id="tHdg">—</div></div>
+          <div class="cell"><div class="l">TO</div><div class="v c" id="tTo">—</div></div>
+          <div class="cell"><div class="l">PITCH</div><div class="v a" id="tPitch">0.0</div></div>
+          <div class="cell"><div class="l">ROLL</div><div class="v a" id="tRoll">0.0</div></div>
+          <div class="cell"><div class="l">DIST</div><div class="v" id="tDist">—</div></div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const params = new URLSearchParams(location.search);
+      const RANGES = [10, 20, 40, 80, 160, 320];
+      let rangeNm = 80;
+      let mode = "ROSE_NAV";
+      let flying = false;
+      let zeroPitch = 0, zeroRoll = 0, zeroHeading = null;
+      let lastRaw = { pitch: 0, roll: 0, heading: null };
+      let peer = null;
+      let conn = null;
+
+      const $ = (id) => document.getElementById(id);
+      if (params.get("peer")) $("peerId").value = params.get("peer");
+
+      function setLink(text, on) {
+        const el = $("link");
+        el.textContent = text;
+        el.className = "link" + (on ? " on" : "");
+      }
+      function msg(text, kind) {
+        const el = $("routeMsg");
+        el.textContent = text;
+        el.className = "status" + (kind ? " " + kind : "");
+      }
+      function send(obj) {
+        if (conn && conn.open) conn.send(obj);
+      }
+
+      function onData(data) {
+        let m = data;
+        try { if (typeof data === "string") m = JSON.parse(data); } catch { return; }
+        if (m.type === "telemetry") applyTel(m);
+        if (m.type === "routeResult") {
+          msg(m.ok ? (m.summary || "ROUTE LOADED") : (m.error || "FAIL"), m.ok ? "ok" : "err");
+          if (m.ok && m.rangeNm) {
+            rangeNm = m.rangeNm;
+            $("rngVal").textContent = rangeNm + " NM";
+          }
+        }
+      }
+
+      function applyTel(t) {
+        $("tPhase").textContent = t.phase || "—";
+        $("tAlt").textContent = t.altitudeFt != null ? Math.round(t.altitudeFt) : "—";
+        $("tVs").textContent = t.vsFpm != null ? Math.round(t.vsFpm) : "—";
+        $("tGs").textContent = t.gs != null ? Math.round(t.gs) : "—";
+        $("tHdg").textContent = t.heading != null ? String(Math.round(t.heading)).padStart(3, "0") : "—";
+        $("tTo").textContent = t.toIdent || "—";
+        $("tDist").textContent = t.toDistNm != null ? Number(t.toDistNm).toFixed(1) : "—";
+        if (t.pitch != null && !flying) $("tPitch").textContent = Number(t.pitch).toFixed(1);
+        if (t.roll != null && !flying) $("tRoll").textContent = Number(t.roll).toFixed(1);
+        if (t.rangeNm) { rangeNm = t.rangeNm; $("rngVal").textContent = rangeNm + " NM"; }
+        if (t.displayMode) {
+          mode = t.displayMode;
+          document.querySelectorAll("#modes button").forEach((b) => {
+            b.classList.toggle("on", b.dataset.mode === mode);
+          });
+        }
+      }
+
+      function connect() {
+        const remoteId = $("peerId").value.trim();
+        if (!remoteId) {
+          msg("PEER ID gerekli (masaüstü FCC URL)", "err");
+          return;
+        }
+        if (conn) try { conn.close(); } catch (_) {}
+        if (peer) try { peer.destroy(); } catch (_) {}
+        setLink("LINK…", false);
+        msg("Connecting…");
+
+        peer = new Peer({ debug: 0 });
+        peer.on("open", () => {
+          conn = peer.connect(remoteId, { reliable: true });
+          conn.on("open", () => {
+            setLink("LINK OK", true);
+            msg("FCC LINKED", "ok");
+            send({ type: "hello", role: "phone" });
+            send({ type: "command", action: "enablePhoneControl" });
+            send({ type: "command", action: "requestTelemetry" });
+          });
+          conn.on("data", onData);
+          conn.on("close", () => setLink("NO LINK", false));
+          conn.on("error", () => { setLink("ERR", false); msg("Conn error", "err"); });
+        });
+        peer.on("error", (e) => {
+          setLink("ERR", false);
+          msg(String(e), "err");
+        });
+      }
+
+      function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+      function onOrient(e) {
+        if (!flying) return;
+        const rawPitch = (e.beta ?? 0) - 90;
+        const rawRoll = e.gamma ?? 0;
+        const pitch = clamp(rawPitch - zeroPitch, -40, 40);
+        const roll = clamp(rawRoll - zeroRoll, -60, 60);
+        let heading = null;
+        if (typeof e.alpha === "number") {
+          const rawHdg = (360 - e.alpha + 360) % 360;
+          heading = (rawHdg - (zeroHeading ?? 0) + 360) % 360;
+        }
+        lastRaw = { pitch: rawPitch, roll: rawRoll, heading };
+        $("tPitch").textContent = pitch.toFixed(1);
+        $("tRoll").textContent = roll.toFixed(1);
+        send({ type: "attitude", pitch, roll, heading });
+      }
+
+      async function engageFly() {
+        try {
+          if (typeof DeviceOrientationEvent !== "undefined"
+              && typeof DeviceOrientationEvent.requestPermission === "function") {
+            const res = await DeviceOrientationEvent.requestPermission();
+            if (res !== "granted") { msg("SENSOR DENIED", "err"); return; }
+          }
+        } catch (err) { msg("SENSOR " + err, "err"); return; }
+        flying = true;
+        window.addEventListener("deviceorientation", onOrient, true);
+        $("fly").textContent = "FLY ACTIVE";
+        $("fly").classList.add("fly-on");
+        send({ type: "command", action: "enablePhoneControl" });
+        msg("FCC ENGAGED · FLY", "ok");
+      }
+
+      $("connectBtn").onclick = connect;
+      $("reconnect").onclick = connect;
+      $("load").onclick = () => {
+        const from = $("dep").value.trim().toUpperCase();
+        const to = $("arr").value.trim().toUpperCase();
+        $("dep").value = from; $("arr").value = to;
+        msg("LOADING…");
+        send({ type: "command", action: "loadRoute", from, to });
+      };
+      $("reset").onclick = () => send({ type: "command", action: "reset" });
+      $("play").onclick = () => send({ type: "command", action: "togglePlay" });
+      $("fly").onclick = engageFly;
+      $("zero").onclick = () => {
+        zeroPitch = lastRaw.pitch; zeroRoll = lastRaw.roll;
+        if (typeof lastRaw.heading === "number") zeroHeading = lastRaw.heading;
+        msg("ATT ZEROED", "ok");
+      };
+      $("rngDown").onclick = () => {
+        rangeNm = RANGES[Math.max(0, RANGES.indexOf(rangeNm) - 1)];
+        $("rngVal").textContent = rangeNm + " NM";
+        send({ type: "command", action: "setRange", rangeNm });
+      };
+      $("rngUp").onclick = () => {
+        rangeNm = RANGES[Math.min(RANGES.length - 1, RANGES.indexOf(rangeNm) + 1)];
+        $("rngVal").textContent = rangeNm + " NM";
+        send({ type: "command", action: "setRange", rangeNm });
+      };
+      document.querySelectorAll("#modes button").forEach((b) => {
+        b.onclick = () => {
+          mode = b.dataset.mode;
+          document.querySelectorAll("#modes button").forEach((x) => x.classList.remove("on"));
+          b.classList.add("on");
+          send({ type: "command", action: "setMode", mode });
+        };
+      });
+      ["dep", "arr"].forEach((id) => {
+        $(id).addEventListener("input", (e) => {
+          e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4);
+        });
+      });
+
+      if (params.get("peer")) connect();
+    </script>
+  </body>
+</html>
