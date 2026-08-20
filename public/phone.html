@@ -6,8 +6,15 @@
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
     />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#050505" />
     <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="FCC" />
+    <meta name="description" content="EFIS Flight Control Computer — phone panel" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/fcc-192.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/fcc-192.png" />
     <title>FCC</title>
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <style>
@@ -140,9 +147,77 @@
         text-align: left;
         color: var(--w);
       }
+
+      /* Landscape required gate */
+      .orient-gate {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: #050505;
+        color: var(--w);
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        padding: 24px;
+        text-align: center;
+      }
+      .orient-gate .icon {
+        width: 52px;
+        height: 84px;
+        border: 3px solid var(--a);
+        border-radius: 8px;
+        position: relative;
+        animation: tilt 1.4s ease-in-out infinite;
+      }
+      .orient-gate .icon::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        bottom: 8px;
+        width: 14px;
+        height: 3px;
+        background: var(--a);
+        transform: translateX(-50%);
+        border-radius: 2px;
+      }
+      .orient-gate .title {
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        color: var(--a);
+      }
+      .orient-gate .hint {
+        font-size: 12px;
+        color: var(--d);
+        max-width: 280px;
+        line-height: 1.5;
+        letter-spacing: 0.04em;
+      }
+      @keyframes tilt {
+        0%, 100% { transform: rotate(0deg); }
+        40% { transform: rotate(90deg); }
+        60% { transform: rotate(90deg); }
+      }
+      body.portrait .orient-gate { display: flex; }
+      body.portrait .fcc { visibility: hidden; pointer-events: none; }
+
+      @media (orientation: landscape) {
+        .fcc { max-width: 720px; }
+      }
     </style>
   </head>
-  <body>
+  <body class="portrait">
+    <div class="orient-gate" id="orientGate" aria-live="polite">
+      <div class="icon" aria-hidden="true"></div>
+      <div class="title">YATAY TUTUN</div>
+      <div class="hint">
+        FCC yalnızca yatay (landscape) modda kullanılır.<br />
+        Telefonu yan çevirin.
+      </div>
+    </div>
+
     <div class="fcc">
       <header>
         <div>
@@ -462,7 +537,7 @@
       }
 
       function sendControl() {
-        if (!flying || !conn || !conn.open) return;
+        if (!flying || !isLandscape() || !conn || !conn.open) return;
         const now = performance.now();
         const dt = lastFilterTs ? Math.min(0.1, (now - lastFilterTs) / 1000) : 0.05;
         lastFilterTs = now;
@@ -491,6 +566,41 @@
         if (controlTimer) { clearInterval(controlTimer); controlTimer = null; }
       }
 
+      function isLandscape() {
+        if (window.screen && window.screen.orientation && window.screen.orientation.type) {
+          return String(window.screen.orientation.type).startsWith("landscape");
+        }
+        if (typeof window.orientation === "number") {
+          return Math.abs(window.orientation) === 90;
+        }
+        return window.innerWidth > window.innerHeight;
+      }
+
+      function pauseFlyForPortrait() {
+        if (!flying) return;
+        flying = false;
+        stopControlLoop();
+        window.removeEventListener("deviceorientation", onOrient, true);
+        $("fly").textContent = "ENGAGE FLY";
+        $("fly").classList.remove("fly-on");
+        cmd("ENGAGE_FLY", { enabled: false });
+        msg("PORTRAIT · FLY OFF", "err");
+      }
+
+      function updateOrientationGate() {
+        const landscape = isLandscape();
+        document.body.classList.toggle("portrait", !landscape);
+        document.body.classList.toggle("landscape", landscape);
+        if (!landscape) pauseFlyForPortrait();
+        tryLockLandscape();
+      }
+
+      function tryLockLandscape() {
+        const ori = screen.orientation;
+        if (!ori || typeof ori.lock !== "function") return;
+        ori.lock("landscape").catch(function () { /* user gesture / unsupported */ });
+      }
+
       async function toggleFly() {
         if (flying) {
           flying = false;
@@ -502,6 +612,11 @@
           msg("FLY OFF");
           return;
         }
+        if (!isLandscape()) {
+          msg("Önce telefonu yatay tutun", "err");
+          updateOrientationGate();
+          return;
+        }
         try {
           if (typeof DeviceOrientationEvent !== "undefined"
               && typeof DeviceOrientationEvent.requestPermission === "function") {
@@ -509,6 +624,7 @@
             if (res !== "granted") { msg("SENSOR DENIED", "err"); return; }
           }
         } catch (err) { msg("SENSOR " + err, "err"); return; }
+        tryLockLandscape();
         flying = true;
         filterInit = false;
         headingHistory = [];
@@ -521,7 +637,10 @@
         msg("FCC ENGAGED · FLY", "ok");
       }
 
-      $("connectBtn").onclick = connect;
+      $("connectBtn").onclick = () => {
+        tryLockLandscape();
+        connect();
+      };
       $("disconnectBtn").onclick = disconnect;
       $("load").onclick = () => {
         const from = $("dep").value.trim().toUpperCase();
@@ -576,6 +695,18 @@
           e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4);
         });
       });
+
+      window.addEventListener("orientationchange", updateOrientationGate);
+      window.addEventListener("resize", updateOrientationGate);
+      if (screen.orientation) {
+        screen.orientation.addEventListener("change", updateOrientationGate);
+      }
+      updateOrientationGate();
+
+      // PWA service worker
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("/sw.js").catch(function () {});
+      }
 
       if (params.get("peer")) connect();
     </script>
