@@ -93,6 +93,7 @@ export interface RouteLoadState {
 export interface PhoneLinkState {
   enabled: boolean;
   connected: boolean;
+  engaged: boolean;
   lastUpdateMs: number | null;
 }
 
@@ -107,6 +108,12 @@ export interface NavState {
   rangeNm: RangeNm;
   simRunning: boolean;
   simElapsedSec: number;
+  /** Last ~30s of positions for ND trail (sampled ~2 Hz) */
+  trail: LatLon[];
+  hdgHold: boolean;
+  hdgHoldTarget: number | null;
+  /** Pulsed true for one tick when a waypoint is captured */
+  wptCapturePulse: boolean;
 }
 
 export interface LoadedRoutePayload {

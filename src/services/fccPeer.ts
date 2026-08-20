@@ -1,6 +1,20 @@
 import { Peer, type DataConnection } from "peerjs";
+import type { PhoneControlData } from "../types/control";
+import type { DesktopToPhone, TelemetryData } from "../types/telemetry";
 
 export type FccInbound =
+  | { type: "CONTROL"; data: PhoneControlData }
+  | {
+      type: "COMMAND";
+      command: string;
+      dep?: string;
+      arr?: string;
+      mode?: string;
+      rangeNm?: number;
+      enabled?: boolean;
+    }
+  | { type: "HELLO"; role: string }
+  /** @deprecated legacy — ignored after protocol break */
   | { type: "attitude"; pitch: number; roll: number; heading?: number | null }
   | {
       type: "command";
@@ -11,6 +25,10 @@ export type FccInbound =
       rangeNm?: number;
     }
   | { type: "hello"; role: string };
+
+export type FccOutbound =
+  | DesktopToPhone
+  | { type: "TELEMETRY"; data: TelemetryData };
 
 type Handler = (msg: FccInbound) => void;
 
@@ -68,7 +86,8 @@ export class DesktopFccPeer {
     this.conn = conn;
     conn.on("open", () => {
       this.onStatus({ peerId: this.peer?.id ?? null, connected: true });
-      this.send({ type: "hello", role: "desktop" });
+      this.send({ type: "HELLO", role: "desktop" });
+      this.send({ type: "STATUS", status: "CONNECTED" });
     });
     conn.on("data", (data) => {
       try {
@@ -85,7 +104,7 @@ export class DesktopFccPeer {
     });
   }
 
-  send(obj: unknown): void {
+  send(obj: FccOutbound | Record<string, unknown>): void {
     if (this.conn?.open) {
       this.conn.send(obj);
     }

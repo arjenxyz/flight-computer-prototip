@@ -172,7 +172,7 @@ function drawAttitudeReadouts(
   ctx.font = "bold 20px 'Roboto Mono', 'Consolas', monospace";
   ctx.fillText(formatAlt(attitude.altitudeFt), 12, 28);
 
-  // VS
+  // VS digital + simple vertical ticks
   ctx.font = "bold 12px 'Roboto Mono', 'Consolas', monospace";
   ctx.fillStyle = attitude.verticalSpeedFpm >= 0 ? EFIS.green : EFIS.amber;
   const vsSign = attitude.verticalSpeedFpm >= 0 ? "+" : "";
@@ -182,12 +182,40 @@ function drawAttitudeReadouts(
     54,
   );
 
+  // Compact VS tape on right edge
+  const tapeX = width - 28;
+  const tapeTop = height * 0.22;
+  const tapeH = height * 0.56;
+  const tapeMid = tapeTop + tapeH / 2;
+  ctx.strokeStyle = EFIS.dimWhite;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(tapeX, tapeTop);
+  ctx.lineTo(tapeX, tapeTop + tapeH);
+  ctx.stroke();
+  for (const mark of [-2000, -1000, 0, 1000, 2000]) {
+    const y = tapeMid - (mark / 6000) * tapeH;
+    ctx.beginPath();
+    ctx.moveTo(tapeX - 4, y);
+    ctx.lineTo(tapeX + 4, y);
+    ctx.stroke();
+  }
+  const vsClamped = Math.max(-6000, Math.min(6000, attitude.verticalSpeedFpm));
+  const vsY = tapeMid - (vsClamped / 6000) * tapeH;
+  ctx.fillStyle = attitude.verticalSpeedFpm >= 0 ? EFIS.green : EFIS.amber;
+  ctx.beginPath();
+  ctx.moveTo(tapeX + 6, vsY);
+  ctx.lineTo(tapeX + 14, vsY - 5);
+  ctx.lineTo(tapeX + 14, vsY + 5);
+  ctx.closePath();
+  ctx.fill();
+
   // Pitch / Roll digital
   ctx.textAlign = "right";
   ctx.fillStyle = EFIS.white;
   ctx.font = "bold 12px 'Roboto Mono', 'Consolas', monospace";
-  ctx.fillText(`P ${attitude.pitch.toFixed(1)}°`, width - 12, 12);
-  ctx.fillText(`R ${attitude.roll.toFixed(1)}°`, width - 12, 28);
+  ctx.fillText(`P ${attitude.pitch.toFixed(1)}°`, width - 36, 12);
+  ctx.fillText(`R ${attitude.roll.toFixed(1)}°`, width - 36, 28);
 
   // Bottom label
   ctx.textAlign = "center";

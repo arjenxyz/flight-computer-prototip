@@ -327,6 +327,15 @@ body,
   color: var(--efis-amber);
 }
 
+.readout-row .value.yellow {
+  color: var(--efis-yellow, #ffff00);
+}
+
+.readout-row .unit.cyan {
+  color: var(--efis-cyan);
+  margin-left: 4px;
+}
+
 .readout-row .unit {
   font-size: 10px;
   color: var(--efis-dim);

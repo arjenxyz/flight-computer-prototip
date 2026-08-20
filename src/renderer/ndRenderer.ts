@@ -1,4 +1,5 @@
-import type { NavState } from "../types/navigation";
+import type { LatLon, NavState } from "../types/navigation";
+import { destinationPoint, projectToScreen } from "../simulation/navMath";
 import { EFIS } from "./colors";
 import {
   drawCompassRose,
@@ -11,10 +12,84 @@ import {
   drawAircraftSymbolRotated,
 } from "./aircraftSymbol";
 import { drawFlightPlan, drawRangeRings } from "./flightPlan";
+import { drawWindArrow } from "./windArrow";
 
 export interface RenderSize {
   width: number;
   height: number;
+}
+
+function gsColor(gs: number): string {
+  if (gs > 400) return EFIS.amber;
+  if (gs >= 200) return EFIS.green;
+  return EFIS.yellow;
+}
+
+function drawTrail(
+  ctx: CanvasRenderingContext2D,
+  trail: LatLon[],
+  aircraftPos: LatLon,
+  upHeading: number,
+  pixelsPerNm: number,
+  cx: number,
+  cy: number,
+): void {
+  if (trail.length < 2) return;
+  ctx.save();
+  for (let i = 0; i < trail.length; i++) {
+    const p = projectToScreen(
+      trail[i],
+      aircraftPos,
+      upHeading,
+      pixelsPerNm,
+      cx,
+      cy,
+    );
+    const t = i / Math.max(1, trail.length - 1);
+    const r = 1.2 + t * 1.8;
+    ctx.fillStyle = `rgba(0, 255, 255, ${0.15 + t * 0.55})`;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+/** 1-minute look-ahead speed vector along track. */
+function drawSpeedVector(
+  ctx: CanvasRenderingContext2D,
+  aircraftPos: LatLon,
+  track: number,
+  gs: number,
+  upHeading: number,
+  pixelsPerNm: number,
+  cx: number,
+  cy: number,
+): void {
+  if (gs < 5) return;
+  const lookAheadNm = gs / 60;
+  const end = destinationPoint(aircraftPos, lookAheadNm, track);
+  const p = projectToScreen(end, aircraftPos, upHeading, pixelsPerNm, cx, cy);
+
+  ctx.save();
+  ctx.strokeStyle = EFIS.green;
+  ctx.fillStyle = EFIS.green;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(p.x, p.y);
+  ctx.stroke();
+
+  const ang = Math.atan2(p.y - cy, p.x - cx);
+  ctx.translate(p.x, p.y);
+  ctx.rotate(ang);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(-8, -4);
+  ctx.lineTo(-8, 4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
 }
 
 /**
@@ -32,23 +107,18 @@ export function renderND(
   const arcMode = mode === "ARC";
   const planMode = mode === "PLAN";
 
-  // Outer usable radius (leave margin for lubber / labels)
   const radius = Math.min(width, height) * 0.42;
 
-  // Clear
   ctx.fillStyle = EFIS.background;
   ctx.fillRect(0, 0, width, height);
 
   const aircraft = state.aircraft;
-  // Heading-up: rose rotates with aircraft heading; PLAN: north-up
   const upHeading = planMode ? 0 : aircraft.heading;
   const pixelsPerNm = radius / state.rangeNm;
 
-  // Clip for ARC mode (forward sector)
   if (arcMode) {
     ctx.save();
     ctx.beginPath();
-    // Sector from -50° to +50° plus bottom half cut
     const start = -Math.PI / 2 - (55 * Math.PI) / 180;
     const end = -Math.PI / 2 + (55 * Math.PI) / 180;
     ctx.moveTo(cx, cy);
@@ -57,13 +127,19 @@ export function renderND(
     ctx.clip();
   }
 
-  // 1. Range rings
   drawRangeRings(ctx, cx, cy, radius, state.rangeNm, arcMode);
-
-  // 2. Compass rose
   drawCompassRose(ctx, cx, cy, radius, upHeading, arcMode);
 
-  // 3. Flight plan
+  drawTrail(
+    ctx,
+    state.trail ?? [],
+    aircraft.position,
+    upHeading,
+    pixelsPerNm,
+    cx,
+    cy,
+  );
+
   drawFlightPlan(
     ctx,
     state.flightPlan,
@@ -74,11 +150,23 @@ export function renderND(
     cy,
   );
 
+  if (!planMode) {
+    drawSpeedVector(
+      ctx,
+      aircraft.position,
+      aircraft.track,
+      aircraft.groundSpeed,
+      upHeading,
+      pixelsPerNm,
+      cx,
+      cy,
+    );
+  }
+
   if (arcMode) {
     ctx.restore();
   }
 
-  // 4. Heading bug & track diamond (on rose, relative to aircraft heading in heading-up)
   if (!planMode) {
     drawHeadingBug(
       ctx,
@@ -101,13 +189,20 @@ export function renderND(
     drawLubberLine(ctx, cx, cy, radius);
     drawAircraftSymbolFixed(ctx, cx, cy);
   } else {
-    // PLAN: north-up, aircraft rotated by heading, no lubber
     drawAircraftSymbolRotated(ctx, cx, cy, aircraft.heading);
-    // Still show a north reference triangle at top
     drawLubberLine(ctx, cx, cy, radius);
   }
 
-  // 5. Mode / range annunciations
+  drawWindArrow(
+    ctx,
+    cx,
+    cy,
+    radius,
+    aircraft.wind.direction,
+    aircraft.wind.speed,
+    upHeading,
+  );
+
   drawAnnunciations(ctx, state, width, height);
 }
 
@@ -128,17 +223,25 @@ function drawAnnunciations(
         ? "ARC"
         : "PLAN";
 
-  // Bottom-left: mode
   ctx.textAlign = "left";
   ctx.textBaseline = "bottom";
   ctx.fillText(modeLabel, 16, height - 16);
 
-  // Bottom-right: range
+  const gs = Math.round(state.aircraft.groundSpeed);
+  ctx.fillStyle = gsColor(state.aircraft.groundSpeed);
+  ctx.font = "bold 13px 'Roboto Mono', 'Consolas', monospace";
+  ctx.fillText(`GS ${gs}`, 16, height - 34);
+
+  if (state.hdgHold) {
+    ctx.fillStyle = EFIS.cyan;
+    ctx.fillText("HDG HOLD", 16, height - 52);
+  }
+
   ctx.textAlign = "right";
   ctx.fillStyle = EFIS.blue;
+  ctx.font = "bold 14px 'Roboto Mono', 'Consolas', monospace";
   ctx.fillText(String(state.rangeNm), width - 16, height - 16);
 
-  // Top-center: heading digital readout (heading-up modes)
   if (state.displayMode !== "PLAN") {
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
@@ -146,6 +249,11 @@ function drawAnnunciations(
     ctx.font = "bold 18px 'Roboto Mono', 'Consolas', monospace";
     const hdg = Math.round(state.aircraft.heading) % 360;
     ctx.fillText(String(hdg).padStart(3, "0"), width / 2, 10);
+
+    ctx.font = "bold 12px 'Roboto Mono', 'Consolas', monospace";
+    ctx.fillStyle = EFIS.green;
+    const trk = Math.round(state.aircraft.track) % 360;
+    ctx.fillText(`TRK ${String(trk).padStart(3, "0")}`, width / 2, 32);
   }
 
   ctx.restore();

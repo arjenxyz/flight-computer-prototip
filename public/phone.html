@@ -24,6 +24,7 @@
         --d: #888;
         --b: #2196f3;
         --w: #eee;
+        --r: #ff5252;
       }
       * { box-sizing: border-box; }
       html, body {
@@ -38,7 +39,7 @@
       .fcc {
         max-width: 440px;
         margin: 0 auto;
-        padding: 10px 10px 20px;
+        padding: 10px 10px 24px;
         display: flex;
         flex-direction: column;
         gap: 8px;
@@ -75,9 +76,9 @@
         letter-spacing: 0.12em;
         color: var(--d);
       }
-      input {
+      input, select {
         font: inherit;
-        font-size: 22px;
+        font-size: 18px;
         font-weight: 700;
         padding: 10px 8px;
         text-align: center;
@@ -88,6 +89,13 @@
         border-radius: 2px;
         width: 100%;
       }
+      select { font-size: 14px; color: var(--w); text-transform: none; }
+      input[type="range"] {
+        padding: 0;
+        height: 28px;
+        accent-color: var(--b);
+      }
+      .sens-val { font-size: 14px; color: var(--c); text-align: center; margin-top: 4px; }
       .btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
       button {
         font: inherit;
@@ -105,8 +113,11 @@
       button.g { background: var(--g); color: #041208; border-color: var(--g); }
       button.b { background: var(--b); color: #061018; border-color: var(--b); }
       button.a { border-color: var(--a); color: var(--a); background: #1a1400; }
+      button.r { border-color: var(--r); color: var(--r); background: #1a0808; }
       button.on { background: var(--b); border-color: var(--b); color: #061018; }
       button.fly-on { background: var(--g); border-color: var(--g); color: #041208; }
+      button.hold-on { background: var(--c); border-color: var(--c); color: #041018; }
+      button.paused { background: var(--a); border-color: var(--a); color: #1a1400; }
       button:disabled { opacity: 0.35; }
       .status { margin-top: 8px; font-size: 11px; color: var(--d); min-height: 1.2em; }
       .status.ok { color: var(--g); }
@@ -123,7 +134,6 @@
       .cell .v.c { color: var(--c); }
       .cell .v.y { color: var(--y); }
       .cell .v.a { color: var(--a); }
-      .foot { font-size: 9px; color: var(--d); line-height: 1.4; padding: 0 2px; margin-top: 8px; }
       .peer-box input {
         font-size: 12px;
         text-transform: none;
@@ -143,31 +153,30 @@
       </header>
 
       <section>
-        <div class="htag">LINK · DISPLAY PEER ID</div>
+        <div class="htag">PEER BAĞLANTI</div>
         <div class="peer-box">
-          <label>PEER ID (masaüstünden)<input id="peerId" placeholder="masaüstü FCC URL’deki peer=" /></label>
+          <label>PEER ID<input id="peerId" placeholder="masaüstü FCC URL peer=" /></label>
         </div>
         <div class="btns">
           <button id="connectBtn" class="b">CONNECT</button>
-          <button id="reconnect">RELINK</button>
+          <button id="disconnectBtn" class="r">DISCONNECT</button>
         </div>
-        <div id="routeMsg" class="status">Masaüstü FCC URL açın veya PEER ID yapıştırın</div>
+        <div id="routeMsg" class="status">Peer ID yapıştırın veya FCC URL açın</div>
       </section>
 
       <section>
-        <div class="htag">FMS · ROUTE</div>
+        <div class="htag">ROTA YÜKLEME</div>
         <div class="row2">
           <label>DEP<input id="dep" maxlength="4" value="LTFM" /></label>
           <label>ARR<input id="arr" maxlength="4" value="LHBP" /></label>
         </div>
         <div class="btns">
-          <button id="load" class="g">LOAD RTE</button>
-          <button id="reset" class="a">RESET</button>
+          <button id="load" class="g">LOAD ROUTE</button>
         </div>
       </section>
 
       <section>
-        <div class="htag">EFIS · ND MODE / RANGE</div>
+        <div class="htag">EFIS KONTROLLERI</div>
         <div class="btns" id="modes">
           <button data-mode="ROSE_NAV" class="on">ROSE</button>
           <button data-mode="ARC">ARC</button>
@@ -181,19 +190,33 @@
       </section>
 
       <section>
-        <div class="htag">FCC · CONTROL</div>
+        <div class="htag">UÇUŞ KONTROLÜ</div>
         <div class="btns">
-          <button id="fly" class="g">ENGAGE · FLY</button>
-          <button id="zero">ZERO ATT</button>
+          <button id="fly" class="g">ENGAGE FLY</button>
+          <button id="zero">ATTITUDE ZERO</button>
         </div>
         <div class="btns">
-          <button id="play">RUN / HOLD</button>
+          <button id="hdgHold">HDG HOLD</button>
+          <button id="pause">PAUSE</button>
+          <button id="reset" class="a">RESET</button>
         </div>
-        <div class="foot">ENGAGE · FLY = jiroskop → masaüstü ATT/ND</div>
+        <div class="row2" style="margin-top:8px">
+          <label>SENSITIVITY
+            <input id="sens" type="range" min="1" max="10" value="5" />
+            <div class="sens-val" id="sensVal">5</div>
+          </label>
+          <label>SMOOTHING
+            <select id="smooth">
+              <option value="low">Low</option>
+              <option value="medium" selected>Med</option>
+              <option value="high">High</option>
+            </select>
+          </label>
+        </div>
       </section>
 
       <section>
-        <div class="htag">PFD / ND FEED</div>
+        <div class="htag">TELEMETRI</div>
         <div class="cells">
           <div class="cell"><div class="l">PHASE</div><div class="v y" id="tPhase">—</div></div>
           <div class="cell"><div class="l">ALT</div><div class="v" id="tAlt">—</div></div>
@@ -211,13 +234,25 @@
     <script>
       const params = new URLSearchParams(location.search);
       const RANGES = [10, 20, 40, 80, 160, 320];
+      const DEADBAND = 0.5;
+
       let rangeNm = 80;
       let mode = "ROSE_NAV";
       let flying = false;
+      let hdgHold = false;
+      let paused = false;
+      let sensitivity = 5;
+      let smoothing = "medium";
       let zeroPitch = 0, zeroRoll = 0, zeroHeading = null;
       let lastRaw = { pitch: 0, roll: 0, heading: null };
       let peer = null;
       let conn = null;
+      let controlTimer = null;
+
+      let prevPitch = 0, prevRoll = 0, prevHeading = null;
+      let headingHistory = [];
+      let filterInit = false;
+      let lastFilterTs = 0;
 
       const $ = (id) => document.getElementById(id);
       if (params.get("peer")) $("peerId").value = params.get("peer");
@@ -235,28 +270,110 @@
       function send(obj) {
         if (conn && conn.open) conn.send(obj);
       }
+      function cmd(command, extra) {
+        send(Object.assign({ type: "COMMAND", command }, extra || {}));
+      }
+      function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+      function normHdg(h) {
+        let x = h % 360;
+        if (x < 0) x += 360;
+        return x;
+      }
+      function hdgDiff(from, to) {
+        let d = normHdg(to) - normHdg(from);
+        if (d > 180) d -= 360;
+        if (d <= -180) d += 360;
+        return d;
+      }
+
+      function rateLimit(nv, pv, maxRate, dt) {
+        const maxChange = maxRate * dt;
+        return Math.max(pv - maxChange, Math.min(pv + maxChange, nv));
+      }
+      function lowPass(nv, pv, alpha) {
+        return pv + alpha * (nv - pv);
+      }
+      function smoothingAlpha(level) {
+        if (level === "low") return 0.55;
+        if (level === "high") return 0.12;
+        return 0.28;
+      }
+      function medianHeading(value) {
+        headingHistory.push(normHdg(value));
+        if (headingHistory.length > 5) headingHistory.shift();
+        const base = headingHistory[0];
+        const unwrapped = headingHistory.map((h) => base + hdgDiff(base, h));
+        const sorted = unwrapped.slice().sort((a, b) => a - b);
+        return normHdg(sorted[Math.floor(sorted.length / 2)]);
+      }
+
+      function filterAttitude(rawPitch, rawRoll, rawHeading, dt) {
+        let pitch = rawPitch;
+        let roll = rawRoll;
+        if (Math.abs(pitch) < DEADBAND) pitch = 0;
+        if (Math.abs(roll) < DEADBAND) roll = 0;
+        const scale = sensitivity / 5;
+        pitch *= scale;
+        roll *= scale;
+        pitch = clamp(pitch, -40, 40);
+        roll = clamp(roll, -60, 60);
+
+        const alpha = smoothingAlpha(smoothing);
+        const maxRate = smoothing === "high" ? 18 : smoothing === "low" ? 45 : 30;
+
+        if (!filterInit) {
+          prevPitch = pitch;
+          prevRoll = roll;
+          prevHeading = typeof rawHeading === "number" ? rawHeading : null;
+          filterInit = true;
+          return { pitch, roll, heading: prevHeading };
+        }
+
+        pitch = rateLimit(pitch, prevPitch, maxRate, dt);
+        roll = rateLimit(roll, prevRoll, maxRate, dt);
+        pitch = lowPass(pitch, prevPitch, alpha);
+        roll = lowPass(roll, prevRoll, alpha);
+
+        let heading = prevHeading;
+        if (typeof rawHeading === "number") {
+          const med = medianHeading(rawHeading);
+          if (prevHeading == null) heading = med;
+          else heading = normHdg(prevHeading + alpha * 0.85 * hdgDiff(prevHeading, med));
+        }
+
+        prevPitch = pitch;
+        prevRoll = roll;
+        prevHeading = heading;
+        return { pitch, roll, heading };
+      }
 
       function onData(data) {
         let m = data;
         try { if (typeof data === "string") m = JSON.parse(data); } catch { return; }
-        if (m.type === "telemetry") applyTel(m);
-        if (m.type === "routeResult") {
-          msg(m.ok ? (m.summary || "ROUTE LOADED") : (m.error || "FAIL"), m.ok ? "ok" : "err");
-          if (m.ok && m.rangeNm) {
+        if (m.type === "TELEMETRY" && m.data) applyTel(m.data);
+        if (m.type === "ROUTE_LOADED") {
+          msg(m.summary || "ROUTE LOADED", "ok");
+          if (m.rangeNm) {
             rangeNm = m.rangeNm;
             $("rngVal").textContent = rangeNm + " NM";
           }
+        }
+        if (m.type === "ERROR") msg(m.message || "ERROR", "err");
+        if (m.type === "STATUS") {
+          if (m.status === "LOADING") msg("LOADING…");
+          if (m.status === "READY") msg("READY", "ok");
+          if (m.status === "ERROR") msg(m.message || "ERROR", "err");
         }
       }
 
       function applyTel(t) {
         $("tPhase").textContent = t.phase || "—";
-        $("tAlt").textContent = t.altitudeFt != null ? Math.round(t.altitudeFt) : "—";
-        $("tVs").textContent = t.vsFpm != null ? Math.round(t.vsFpm) : "—";
+        $("tAlt").textContent = t.alt != null ? Math.round(t.alt) : "—";
+        $("tVs").textContent = t.vs != null ? Math.round(t.vs) : "—";
         $("tGs").textContent = t.gs != null ? Math.round(t.gs) : "—";
-        $("tHdg").textContent = t.heading != null ? String(Math.round(t.heading)).padStart(3, "0") : "—";
-        $("tTo").textContent = t.toIdent || "—";
-        $("tDist").textContent = t.toDistNm != null ? Number(t.toDistNm).toFixed(1) : "—";
+        $("tHdg").textContent = t.hdg != null ? String(Math.round(t.hdg)).padStart(3, "0") : "—";
+        $("tTo").textContent = t.to_wpt || "—";
+        $("tDist").textContent = t.to_dist != null ? Number(t.to_dist).toFixed(1) : "—";
         if (t.pitch != null && !flying) $("tPitch").textContent = Number(t.pitch).toFixed(1);
         if (t.roll != null && !flying) $("tRoll").textContent = Number(t.roll).toFixed(1);
         if (t.rangeNm) { rangeNm = t.rangeNm; $("rngVal").textContent = rangeNm + " NM"; }
@@ -266,16 +383,40 @@
             b.classList.toggle("on", b.dataset.mode === mode);
           });
         }
+        if (typeof t.simRunning === "boolean") {
+          paused = !t.simRunning;
+          $("pause").classList.toggle("paused", paused);
+          $("pause").textContent = paused ? "RESUME" : "PAUSE";
+        }
+        if (typeof t.hdgHold === "boolean") {
+          hdgHold = t.hdgHold;
+          $("hdgHold").classList.toggle("hold-on", hdgHold);
+        }
+        if (t.wptCapture) {
+          try { if (navigator.vibrate) navigator.vibrate(80); } catch (_) {}
+        }
+      }
+
+      function disconnect() {
+        stopControlLoop();
+        flying = false;
+        $("fly").textContent = "ENGAGE FLY";
+        $("fly").classList.remove("fly-on");
+        if (conn) try { conn.close(); } catch (_) {}
+        if (peer) try { peer.destroy(); } catch (_) {}
+        conn = null;
+        peer = null;
+        setLink("NO LINK", false);
+        msg("DISCONNECTED");
       }
 
       function connect() {
         const remoteId = $("peerId").value.trim();
         if (!remoteId) {
-          msg("PEER ID gerekli (masaüstü FCC URL)", "err");
+          msg("PEER ID gerekli", "err");
           return;
         }
-        if (conn) try { conn.close(); } catch (_) {}
-        if (peer) try { peer.destroy(); } catch (_) {}
+        disconnect();
         setLink("LINK…", false);
         msg("Connecting…");
 
@@ -285,12 +426,14 @@
           conn.on("open", () => {
             setLink("LINK OK", true);
             msg("FCC LINKED", "ok");
-            send({ type: "hello", role: "phone" });
-            send({ type: "command", action: "enablePhoneControl" });
-            send({ type: "command", action: "requestTelemetry" });
+            send({ type: "HELLO", role: "phone" });
+            cmd("REQUEST_TELEMETRY");
           });
           conn.on("data", onData);
-          conn.on("close", () => setLink("NO LINK", false));
+          conn.on("close", () => {
+            setLink("NO LINK", false);
+            stopControlLoop();
+          });
           conn.on("error", () => { setLink("ERR", false); msg("Conn error", "err"); });
         });
         peer.on("error", (e) => {
@@ -299,25 +442,66 @@
         });
       }
 
-      function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+      let lastOrient = { pitch: 0, roll: 0, heading: null };
+
       function onOrient(e) {
         if (!flying) return;
         const rawPitch = (e.beta ?? 0) - 90;
         const rawRoll = e.gamma ?? 0;
-        const pitch = clamp(rawPitch - zeroPitch, -40, 40);
-        const roll = clamp(rawRoll - zeroRoll, -60, 60);
-        let heading = null;
+        let rawHeading = null;
         if (typeof e.alpha === "number") {
           const rawHdg = (360 - e.alpha + 360) % 360;
-          heading = (rawHdg - (zeroHeading ?? 0) + 360) % 360;
+          rawHeading = normHdg(rawHdg - (zeroHeading ?? 0));
         }
-        lastRaw = { pitch: rawPitch, roll: rawRoll, heading };
-        $("tPitch").textContent = pitch.toFixed(1);
-        $("tRoll").textContent = roll.toFixed(1);
-        send({ type: "attitude", pitch, roll, heading });
+        lastRaw = { pitch: rawPitch, roll: rawRoll, heading: rawHeading };
+        lastOrient = {
+          pitch: rawPitch - zeroPitch,
+          roll: rawRoll - zeroRoll,
+          heading: rawHeading,
+        };
       }
 
-      async function engageFly() {
+      function sendControl() {
+        if (!flying || !conn || !conn.open) return;
+        const now = performance.now();
+        const dt = lastFilterTs ? Math.min(0.1, (now - lastFilterTs) / 1000) : 0.05;
+        lastFilterTs = now;
+        const f = filterAttitude(lastOrient.pitch, lastOrient.roll, lastOrient.heading, dt);
+        $("tPitch").textContent = f.pitch.toFixed(1);
+        $("tRoll").textContent = f.roll.toFixed(1);
+        send({
+          type: "CONTROL",
+          data: {
+            pitch_target: f.pitch,
+            roll_target: f.roll,
+            heading_target: f.heading,
+            timestamp: Date.now(),
+            smoothing,
+            sensitivity,
+            hdg_hold: hdgHold,
+          },
+        });
+      }
+
+      function startControlLoop() {
+        stopControlLoop();
+        controlTimer = setInterval(sendControl, 50);
+      }
+      function stopControlLoop() {
+        if (controlTimer) { clearInterval(controlTimer); controlTimer = null; }
+      }
+
+      async function toggleFly() {
+        if (flying) {
+          flying = false;
+          stopControlLoop();
+          window.removeEventListener("deviceorientation", onOrient, true);
+          $("fly").textContent = "ENGAGE FLY";
+          $("fly").classList.remove("fly-on");
+          cmd("ENGAGE_FLY", { enabled: false });
+          msg("FLY OFF");
+          return;
+        }
         try {
           if (typeof DeviceOrientationEvent !== "undefined"
               && typeof DeviceOrientationEvent.requestPermission === "function") {
@@ -326,46 +510,65 @@
           }
         } catch (err) { msg("SENSOR " + err, "err"); return; }
         flying = true;
+        filterInit = false;
+        headingHistory = [];
+        lastFilterTs = 0;
         window.addEventListener("deviceorientation", onOrient, true);
         $("fly").textContent = "FLY ACTIVE";
         $("fly").classList.add("fly-on");
-        send({ type: "command", action: "enablePhoneControl" });
+        cmd("ENGAGE_FLY", { enabled: true });
+        startControlLoop();
         msg("FCC ENGAGED · FLY", "ok");
       }
 
       $("connectBtn").onclick = connect;
-      $("reconnect").onclick = connect;
+      $("disconnectBtn").onclick = disconnect;
       $("load").onclick = () => {
         const from = $("dep").value.trim().toUpperCase();
         const to = $("arr").value.trim().toUpperCase();
         $("dep").value = from; $("arr").value = to;
         msg("LOADING…");
-        send({ type: "command", action: "loadRoute", from, to });
+        cmd("LOAD_ROUTE", { dep: from, arr: to });
       };
-      $("reset").onclick = () => send({ type: "command", action: "reset" });
-      $("play").onclick = () => send({ type: "command", action: "togglePlay" });
-      $("fly").onclick = engageFly;
+      $("reset").onclick = () => cmd("RESET");
+      $("pause").onclick = () => cmd("PAUSE");
+      $("fly").onclick = toggleFly;
+      $("hdgHold").onclick = () => {
+        hdgHold = !hdgHold;
+        $("hdgHold").classList.toggle("hold-on", hdgHold);
+        cmd("HDG_HOLD", { enabled: hdgHold });
+      };
       $("zero").onclick = () => {
-        zeroPitch = lastRaw.pitch; zeroRoll = lastRaw.roll;
+        zeroPitch = lastRaw.pitch;
+        zeroRoll = lastRaw.roll;
         if (typeof lastRaw.heading === "number") zeroHeading = lastRaw.heading;
+        filterInit = false;
         msg("ATT ZEROED", "ok");
+      };
+      $("sens").oninput = (e) => {
+        sensitivity = Number(e.target.value);
+        $("sensVal").textContent = String(sensitivity);
+      };
+      $("smooth").onchange = (e) => {
+        smoothing = e.target.value;
+        filterInit = false;
       };
       $("rngDown").onclick = () => {
         rangeNm = RANGES[Math.max(0, RANGES.indexOf(rangeNm) - 1)];
         $("rngVal").textContent = rangeNm + " NM";
-        send({ type: "command", action: "setRange", rangeNm });
+        cmd("SET_RANGE", { rangeNm });
       };
       $("rngUp").onclick = () => {
         rangeNm = RANGES[Math.min(RANGES.length - 1, RANGES.indexOf(rangeNm) + 1)];
         $("rngVal").textContent = rangeNm + " NM";
-        send({ type: "command", action: "setRange", rangeNm });
+        cmd("SET_RANGE", { rangeNm });
       };
       document.querySelectorAll("#modes button").forEach((b) => {
         b.onclick = () => {
           mode = b.dataset.mode;
           document.querySelectorAll("#modes button").forEach((x) => x.classList.remove("on"));
           b.classList.add("on");
-          send({ type: "command", action: "setMode", mode });
+          cmd("SET_MODE", { mode });
         };
       });
       ["dep", "arr"].forEach((id) => {

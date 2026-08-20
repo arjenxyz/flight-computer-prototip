@@ -9,13 +9,17 @@ function formatEte(seconds: number): string {
 }
 
 function formatWindArrow(windDir: number, heading: number): string {
-  // Relative wind direction for a simple arrow glyph
   let rel = windDir - heading;
   while (rel < 0) rel += 360;
   while (rel >= 360) rel -= 360;
-  // 8-way arrow
   const idx = Math.round(rel / 45) % 8;
   return ["↓", "↙", "←", "↖", "↑", "↗", "→", "↘"][idx];
+}
+
+function gsClass(gs: number): string {
+  if (gs > 400) return "value amber";
+  if (gs >= 200) return "value green";
+  return "value yellow";
 }
 
 export function DataReadout() {
@@ -28,11 +32,26 @@ export function DataReadout() {
       <div className="readout-left">
         <div className="readout-row">
           <span className="label">GS</span>
-          <span className="value green">{Math.round(aircraft.groundSpeed)}</span>
+          <span className={gsClass(aircraft.groundSpeed)}>
+            {Math.round(aircraft.groundSpeed)}
+          </span>
         </div>
         <div className="readout-row">
           <span className="label">TAS</span>
           <span className="value green">{Math.round(aircraft.tas)}</span>
+        </div>
+        <div className="readout-row">
+          <span className="label">HDG</span>
+          <span className="value yellow">
+            {String(Math.round(aircraft.heading)).padStart(3, "0")}°
+          </span>
+          {state.hdgHold && <span className="unit cyan">HOLD</span>}
+        </div>
+        <div className="readout-row">
+          <span className="label">TRK</span>
+          <span className="value green">
+            {String(Math.round(aircraft.track)).padStart(3, "0")}°
+          </span>
         </div>
         <div className="readout-row wind">
           <span className="value cyan">
@@ -43,13 +62,19 @@ export function DataReadout() {
           </span>
         </div>
         <div className="readout-row">
-          <span className="label">PHONE</span>
-          <span className={state.phoneLink.connected ? "value green" : "value amber"}>
-            {state.phoneLink.enabled
-              ? state.phoneLink.connected
-                ? "LIVE"
-                : "WAIT"
-              : "OFF"}
+          <span className="label">LINK</span>
+          <span
+            className={
+              state.phoneLink.connected ? "value green" : "value amber"
+            }
+          >
+            {state.phoneLink.connected
+              ? state.phoneLink.engaged
+                ? "FLY"
+                : "ONLINE"
+              : state.phoneLink.enabled
+                ? "WAIT"
+                : "OFF"}
           </span>
         </div>
         <div className="readout-row">
@@ -76,13 +101,15 @@ export function DataReadout() {
               <span className="unit">NM</span>
             </div>
             <div className="readout-row">
-              <span className="label">UTC</span>
-              <span className="value green">{formatEte(toWaypoint.eteSeconds)}</span>
+              <span className="label">ETE</span>
+              <span className="value green">
+                {formatEte(toWaypoint.eteSeconds)}
+              </span>
             </div>
             <div className="readout-row">
-              <span className="label">TRK</span>
+              <span className="label">VS</span>
               <span className="value green">
-                {String(Math.round(aircraft.track)).padStart(3, "0")}°
+                {Math.round(aircraft.attitude.verticalSpeedFpm)}
               </span>
             </div>
           </>

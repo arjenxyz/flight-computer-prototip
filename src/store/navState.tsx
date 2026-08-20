@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import type { DisplayMode, NavState, RangeNm } from "../types/navigation";
+import type { PhoneControlData } from "../types/control";
 import { FlightSimEngine, createInitialNavState } from "../simulation/flightSim";
 import { fetchFlightRoute } from "../services/routeService";
 
@@ -21,17 +22,19 @@ interface NavContextValue {
   cycleRange: (direction: 1 | -1) => void;
   togglePlayPause: () => void;
   reset: () => void;
-  loadRoute: (from: string, to: string, apiKey?: string) => Promise<{
+  loadRoute: (
+    from: string,
+    to: string,
+    apiKey?: string,
+  ) => Promise<{
     summary: string;
     rangeNm: number;
   }>;
   setPhoneEnabled: (enabled: boolean) => void;
   setPhoneConnected: (connected: boolean) => void;
-  applyPhoneAttitude: (
-    pitch: number,
-    roll: number,
-    heading?: number | null,
-  ) => void;
+  setPhoneEngaged: (engaged: boolean) => void;
+  applyPhoneControl: (data: PhoneControlData) => void;
+  setHdgHold: (enabled: boolean, target?: number | null) => void;
 }
 
 const NavContext = createContext<NavContextValue | null>(null);
@@ -82,19 +85,28 @@ export function NavProvider({ children }: { children: ReactNode }) {
     engineRef.current?.setPhoneConnected(connected);
   }, []);
 
-  const applyPhoneAttitude = useCallback(
-    (pitch: number, roll: number, heading?: number | null) => {
-      engineRef.current?.applyPhoneAttitude(pitch, roll, heading);
-    },
-    [],
-  );
+  const setPhoneEngaged = useCallback((engaged: boolean) => {
+    engineRef.current?.setPhoneEngaged(engaged);
+  }, []);
+
+  const applyPhoneControl = useCallback((data: PhoneControlData) => {
+    engineRef.current?.applyPhoneControl(data);
+  }, []);
+
+  const setHdgHold = useCallback((enabled: boolean, target?: number | null) => {
+    engineRef.current?.setHdgHold(enabled, target);
+  }, []);
 
   const loadRoute = useCallback(
     async (from: string, to: string, apiKey?: string) => {
       const engine = engineRef.current!;
       engine.setRouteLoading(true, null);
       try {
-        const payload = await fetchFlightRoute({ fromIcao: from, toIcao: to, apiKey });
+        const payload = await fetchFlightRoute({
+          fromIcao: from,
+          toIcao: to,
+          apiKey,
+        });
         engine.loadRoute(payload);
         return {
           summary: `${payload.from.icao} → ${payload.to.icao} · ${payload.distanceNm.toFixed(0)} NM · ${payload.source}`,
@@ -122,7 +134,9 @@ export function NavProvider({ children }: { children: ReactNode }) {
       loadRoute,
       setPhoneEnabled,
       setPhoneConnected,
-      applyPhoneAttitude,
+      setPhoneEngaged,
+      applyPhoneControl,
+      setHdgHold,
     }),
     [
       state,
@@ -134,7 +148,9 @@ export function NavProvider({ children }: { children: ReactNode }) {
       loadRoute,
       setPhoneEnabled,
       setPhoneConnected,
-      applyPhoneAttitude,
+      setPhoneEngaged,
+      applyPhoneControl,
+      setHdgHold,
     ],
   );
 
