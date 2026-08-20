@@ -36,6 +36,19 @@ Gerçek yolcu uçaklarında (Airbus A320 / Boeing 737 sınıfı) pilotun önünd
 
 > Simülasyon amaçlıdır; gerçek operasyonel navigasyon için kullanılmaz.
 
+## Deploy (Vercel)
+
+Repo: https://github.com/arjenxyz/flight-computer-prototip
+
+1. [Vercel](https://vercel.com) → Add New Project → Import `arjenxyz/flight-computer-prototip`
+2. Framework: Vite · Build: `npm run build` · Output: `dist`
+3. Domain: `flight-prototip.vercel.app`
+4. FCC: https://flight-prototip.vercel.app/phone.html
+
+Masaüstü EFIS için hâlâ `npm run tauri dev` gerekir; FCC URL masaüstünden kopyalanır (`?peer=`).
+
+---
+
 ## FCC (telefon) + EFIS ekranları (masaüstü)
 
 | Cihaz | Rol |
